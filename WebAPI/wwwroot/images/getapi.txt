@@ -1,0 +1,30 @@
+[HttpGet("GetAllPdfFiles")]
+public async Task<ActionResult> GetAllPdfFiles([FromForm] List<FileDetailViewModel> fileDetails)
+{
+    try
+    {
+        var pdfFiles = await _fileUploadService.GetAllPDF(fileDetails);
+        return Ok(pdfFiles);
+    }
+    catch (Exception)
+    {
+        throw;
+    }
+} 
+public Task<List<FileDetailViewModel>> GetAllPDF();
+public async Task<List<FileDetailViewModel>> GetAllPDF()
+{
+    try
+    {
+        var pdfFiles = await _context.FileDetails
+            .Where(file => file.FileType == FileType.PDF)
+            .ToListAsync();
+
+        var fileViewModels = _mapper.Map<List<FileDetailViewModel>>(pdfFiles);
+        return fileViewModels;
+    }
+    catch (Exception)
+    {
+        throw;
+    }
+}

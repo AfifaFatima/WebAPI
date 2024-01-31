@@ -1,0 +1,8 @@
+username
+lhw.kpk.t01
+password
+lhw.kpk.t01.456
+
+postgresql
+pasword
+akdnehrc

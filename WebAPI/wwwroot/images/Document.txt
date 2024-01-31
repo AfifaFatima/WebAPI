@@ -1,0 +1,234 @@
+uploadFilePdf(fileType: string): void {
+    const fileInput = this.getFileInput(fileType)
+    if (fileInput.files && fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      // Check if the file has a PDF extension
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        // Assuming you have an Id, replace 'yourId' with the actual Id
+        const Id = 'yourId';
+        // Check if the file has a PDF extension
+        if (file.name.toLowerCase().endsWith('.pdf')) {
+          this.uploadService.UploadPDF( file , __filename).subscribe(
+            (response) => {
+              console.log('File uploaded successfully:', response);
+              // Handle the response or perform any additional logic
+            },
+            (error) => {
+              console.error('File upload failed:', error);
+              // Handle the error
+            }
+          );
+        }
+
+      }
+    }
+    // Perform file upload logic here using the selected fileInput
+    // For example: fileInput.click();
+  }
+  uploadFileImg(fileType: string): void { }
+  uploadFileExl(fileType: string): void { }
+  getFileInput(fileType: string): HTMLInputElement {
+    switch (fileType) {
+      case 'pdf':
+        return this.pdfFileInput.nativeElement;
+      case 'image':
+        return this.imageFileInput.nativeElement;
+      case 'excel':
+        return this.excelFileInput.nativeElement;
+      default:
+        throw new Error(`Invalid file type: ${fileType}`);
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------------------------
+
+using AutoMapper;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.IO;
+using WebAppi.Models.Database;
+using WebAppi.Models.Database.Entities;
+using WebAppi.Models.Generic;
+using WebAppi.Models.ViewModel;
+
+namespace WebAppi.Service
+{
+    public interface IFileUploadService
+    {
+        public Task<Response> PostFileAsync(IFormFile fileData);
+
+        public Task<Response> PostMultiFileAsync(List<FileUpload> fileData);
+
+        public Task DownloadFileById(int fileName);
+        public Task<List<FileDetailViewModel>> GetAllPDF();
+    }
+    public class FileUploadService : IFileUploadService
+    {
+            private readonly ApplicationContext _context;
+            private readonly IMapper _mapper;
+            private readonly AppSetting _appSetting;
+            private readonly IWebHostEnvironment _webHostEnv;
+        public FileUploadService(ApplicationContext context, IMapper mapper)
+        {
+            _context = context;
+            _mapper = mapper;
+        }
+        public async Task<Response> PostFileAsync(IFormFile fileData)
+        {
+            var resp = new Response(); 
+            try
+            {
+                var fileDetails = new FileDetail()
+                {
+                    ID = 0,
+                    FileName = fileData.FileName,
+                };
+
+                using (var stream = new MemoryStream())
+                {
+                    fileData.CopyTo(stream);
+                    fileDetails.FileData = stream.ToArray();
+                }
+
+                var result = _context.FileDetails.Add(fileDetails);
+                await _context.SaveChangesAsync();
+                resp.Success = true;
+                resp.HttpResponseCode = System.Net.HttpStatusCode.OK;
+                resp.CustomResponseCode = "200 OK";
+                resp.Message = "File upload Successfully";
+                resp.Result = "";
+                return resp;
+            }
+           
+                catch (Exception ex)
+            {
+                resp.HttpResponseCode = System.Net.HttpStatusCode.BadRequest;
+                resp.CustomResponseCode = "400 BadRequest";
+                resp.Success = false;
+                resp.Message = "Exception" + ex.Message;
+                resp.Result = null;
+                return resp;
+            }
+        }
+
+
+        public async Task<Response> PostMultiFileAsync(List<FileUpload> fileData)
+        {
+            var resp = new Response();
+            try
+            {
+                foreach (FileUpload file in fileData)
+                {
+                    var fileDetails = new FileDetail()
+                    {
+                        ID = 0,
+                        FileName = file.FileDetail.FileName,
+                    };
+
+                    using (var stream = new MemoryStream())
+                    {
+                        file.FileDetail.CopyTo(stream);
+                        fileDetails.FileData = stream.ToArray();
+                    }
+
+                    var result = _context.FileDetails.Add(fileDetails);
+                }
+                await _context.SaveChangesAsync();
+                resp.Success = true;
+                resp.HttpResponseCode = System.Net.HttpStatusCode.OK;
+                resp.CustomResponseCode = "200 OK";
+                resp.Message = "File upload Successfully";
+                resp.Result = "";
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                resp.HttpResponseCode = System.Net.HttpStatusCode.BadRequest;
+                resp.CustomResponseCode = "400 BadRequest";
+                resp.Success = false;
+                resp.Message = "Exception" + ex ;
+                resp.Result = null;
+                return resp;
+            }
+        }
+
+        public async Task DownloadFileById(int Id)
+        {
+            try
+            {
+                var file = _context.FileDetails.Where(x => x.ID == Id).FirstOrDefaultAsync();
+
+                var content = new System.IO.MemoryStream(file.Result.FileData);
+                var path = Path.Combine(
+                   Directory.GetCurrentDirectory(), "wwwroot\\Images\\",
+                   file.Result.FileName);
+
+                await CopyStream(content, path);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task CopyStream(Stream stream, string downloadPath)
+        {
+            using (var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write))
+            {
+                await stream.CopyToAsync(fileStream);
+            }
+        }
+
+        public async Task<List<FileDetailViewModel>> GetAllPDF()
+        {
+            try
+            {
+                var pdfFiles = await _context.FileDetails
+               
+                    .ToListAsync();
+
+                var fileViewModels = _mapper.Map<List<FileDetailViewModel>>(pdfFiles);
+                return fileViewModels;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+    }
+    
+}
