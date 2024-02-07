@@ -167,7 +167,7 @@ namespace WebAPI.Services
                     if (File.Exists(filePath))
                     {
                         var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-                        var contentType = "application/pdf"; // Set the appropriate content type based on the file type
+                        var contentType = "application/octet-stream"; // Set the appropriate content type based on the file type
 
                         return new FileStreamResult(fileStream, contentType)
                         {
@@ -200,8 +200,6 @@ namespace WebAPI.Services
                 throw new Exception("Error occurred while processing the request.", ex);
             }
         }
-
-        
 
     }
 }
